@@ -9,9 +9,7 @@ def download_in22(out_dir, hf_token=None):
         print("Logging into Hugging Face...")
         login(token=hf_token)
         
-    print("--- Downloading IN22-Gen ---")
-    in22_dir = os.path.join(out_dir, "in22")
-    os.makedirs(in22_dir, exist_ok=True)
+    print("--- Downloading IN22 Datasets ---")
     
     try:
         datasets_to_fetch = {
