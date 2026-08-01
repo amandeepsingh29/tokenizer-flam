@@ -51,6 +51,7 @@ def download_in22(out_dir, hf_token=None):
         print("2. Set your HF_TOKEN environment variable, or paste your token into this script.")
         print("========================================================\n")
 
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 if __name__ == "__main__":

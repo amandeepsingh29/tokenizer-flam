@@ -4,6 +4,7 @@ from datasets import load_dataset
 
 def download_flores(out_dir):
     print("--- Downloading FLORES-200 ---")
+    out_dir = os.path.join(out_dir, "flores")
     os.makedirs(out_dir, exist_ok=True)
     
     langs = {
@@ -17,7 +18,7 @@ def download_flores(out_dir):
         print(f"Fetching {lang_code} from FLORES...")
         try:
             ds = load_dataset("muennighoff/flores200", hf_code, trust_remote_code=True)
-            sentences = ds['dev']['sentence']
+            sentences = ds['devtest']['sentence']
             
             out_path = os.path.join(out_dir, f"{lang_code}.txt")
             with open(out_path, "w", encoding="utf-8") as f:
