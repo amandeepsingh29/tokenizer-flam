@@ -1,41 +1,40 @@
-# Part C: Decision Memo (Tone Casualization)
+# DECISION MEMO
+**Tone Casualization Across Six Indic Languages**
 
-**Objective:** Inject a casual/conversational tone across 6 Indic languages (Hindi, Kannada, Tamil, Telugu, Bengali, Marathi) for the V1 launch in 3 weeks.
-**Constraints:** 1x A100-80GB (2 weeks), 1 QA reviewer (Hindi/Kannada only, 30 hours total), $0 API budget.
+**Objective:** Inject a casual, conversational tone in Hindi, Kannada, Tamil, Telugu, Bengali, and Marathi for V1 in three weeks.
+**Constraints:** 1× A100-80GB for two weeks; one Hindi/Kannada QA reviewer for 30 hours; $0 API budget.
 
----
+**RECOMMENDATION:** Choose Path A: LoRA SFT on locally generated casualized pairs, with a Hindi/Kannada validation gate before scaling.
 
-## 1. Constraint Analysis & Assumptions
-* **Compute Headroom:** 336 hours of A100-80GB compute provides massive headroom for local synthetic data generation or LoRA training.
-* **QA Bandwidth:** At ~1 minute to review/edit a single pair, our reviewer can process 60 pairs per hour. Over 30 hours, our absolute **QA throughput limit is 1,800 pairs** (strictly Hindi/Kannada). 
-* **API Budget:** $0 means all synthetic data must be generated locally using open-weights models.
+## Assumptions
+* The base model already has acceptable semantic competence in all six languages; the gap is primarily tone.
+* An open-weight local teacher can produce useful synthetic casualization pairs without paid APIs.
+* LoRA training and evaluation can finish within the available A100 window and can be merged for serving.
 
-## 2. Path Analysis & Academic Justification
+## Back-of-envelope arithmetic
+* **Compute:** 14 days × 24 hours = 336 A100-hours available for local generation, LoRA training, and evaluation.
+* **Reviewer throughput:** 60 pairs/hour × 30 hours = 1,800 reviewed pairs; allocate 900 Hindi + 900 Kannada.
+* **Data volume:** 1,000 pairs/language × 6 = ~6,000 pairs; 4,200 pairs in the other four languages receive automated checks plus sampling, not native review.
+* **Cost:** $0 API spend. LoRA uses existing compute; merged adapters add no extra model call, with a target of <5% latency increase.
 
-### Path C: Prompt Engineering Only
-* **Cost:** $0 serving latency, zero training overhead.
-* **Analysis (Reject):** **Fatal Capability Limit.** Our current base model lacks the internal reasoning capacity to separate factual instruction following from complex, culture-specific stylistic constraints in non-English languages. 
-* **Citation:** As formalized by *Kumar et al. (2026)* in *"Diagnosing and Repairing Persona Collapse in LLM Advice"* and supported by *"The Chameleon's Limit,"* language models often suffer from **"Persona Collapse."** When forced to maintain a complex persona via prompt engineering, they rapidly abandon the behavioral constraints and default to a homogeneous, generic tone, or actively hallucinate.
+## Path analysis
+* **A — LoRA SFT (choose):** Most consistent style control without another inference-time model. Main risk: synthetic phrasing may be unnatural in four languages without native review.
+* **B — ≤1B rewriter (reject):** Adds TTFT, serving complexity, and a second multilingual failure point; a small model is especially exposed to morphology, dialect and unwanted English fallback.
+* **C — Prompt only (fallback):** Fast and free, but tone instructions can lose priority across tasks, safety rules, formatting demands, and long conversations.
 
-### Path B: Small Inference-Time Rewriter (≤1B)
-* **Cost:** Severe UX Latency (serial TTFT generation).
-* **Analysis (Reject):** **Linguistic Fragmentation.** If our primary model struggles with morphologically rich Indic languages, a ≤1B auxiliary model will be profoundly worse. 
-* **Citation:** Research surrounding Indic LLMs (e.g., the *BharatGen / PARAM-1* framework) heavily documents **"Linguistic Fragmentation."** Models with extremely small parameter counts completely fail to handle the morphological richness and dialect variations of Indic languages, causing them to spew gibberish or revert to English. Training a ≤1B model to avoid this would require massive, highly curated datasets far exceeding our 1,800-pair QA budget. 
+## Success metrics
+| Metric | Launch threshold |
+| :--- | :--- |
+| **Hindi/Kannada blind A/B preference** | ≥70% prefer SFT output |
+| **Meaning preservation** | ≥95% unchanged meaning |
+| **Task-quality regression** | ≤2% absolute drop |
+| **Severe language-quality errors** | <5% in sampled outputs |
+| **Serving latency** | <5% increase; no extra model call |
 
-### Path A: SFT on Synthetic Data (The Winner)
-* **Cost:** $0 serving latency (Parameter-Efficient Fine-Tuning (LoRA) adapters merge natively into base weights).
-* **Data Volume:** We require ~6,000 synthetic pairs (1,000 per language). We will leverage the A100 to generate this data locally. 
-* **The QA Strategy ("Synthetic Extrapolation"):** We use our 1,800-pair QA budget to exhaustively verify 900 Hindi and 900 Kannada pairs. If the local teacher model produces high-quality data for those two, we extrapolate and blindly trust its zero-shot generation for the remaining 4,200 pairs in Tamil, Telugu, Bengali, and Marathi.
-* **Analysis:** SFT is the industry standard to solve "Persona Collapse," baking the tone directly into the weights. This is the only mathematically viable path to hit all 6 languages under our constraints, provided we accept the QA extrapolation risk.
+## Kill criteria — decide by end of Day 5
+* Abandon SFT and ship the best prompt-only baseline if preference gain is <5 percentage points over prompt-only, task accuracy drops >2–3%, or the four non-reviewed languages show material degradation or inconsistent language behavior.
 
-## 3. Recommendation & Metrics
-
-I formally recommend proceeding with **Path (A) SFT on synthetic data** using the Synthetic Extrapolation strategy.
-
-* **Success Metric:** Blind A/B Human Preference Win-Rate (SFT Model vs. Base Model).
-* **Threshold:** The new SFT model must achieve a **>75% win-rate** on conversational prompts, while simultaneously displaying a **<5% regression** on our standard instruction-following benchmarks.
-
-* **Kill Criterion:** If the local open-weights data generator produces synthetic Hindi/Kannada that fails the QA check (i.e., the reviewer rejects or edits >20% of the generated pairs due to Persona Collapse or Linguistic Fragmentation). 
-* **By When:** End of **Week 1**. If the teacher model fails on the languages we *can* verify, it is definitively failing on the ones we *cannot* verify. If this threshold is breached, we must instantly abort the SFT path and pivot entirely to Prompt Engineering (Path C).
-
-* **First Experiment (Day 1):** Run a 50-prompt Prompt Engineering (Path C) stress test on the base model and hand the raw outputs to the reviewer. This instantly tests the severity of the model's Persona Collapse. When it inevitably fails, the reviewer's manual corrections on those 50 prompts become the high-quality seed data for our A100 synthetic data generator.
+## Day-1 experiment
+1. Create 1,000 local synthetic pairs (~170 per language) and train a small LoRA.
+2. Compare current, prompt-only, and LoRA-SFT outputs; manually review 200 Hindi/Kannada samples and run meaning, language-ID/code-mixing, task-quality, and latency checks across all six languages.
+3. Scale toward 6,000 pairs only if SFT clears the quality gates and clearly beats prompt-only; otherwise keep prompt-only as the launch fallback.
