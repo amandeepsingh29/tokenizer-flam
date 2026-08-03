@@ -14,12 +14,12 @@
 
 ### Path C: Prompt Engineering Only
 * **Cost:** $0 serving latency, zero training overhead.
-* **Analysis (Reject):** **Fatal Capability Limit.** A 4B parameter model lacks the internal reasoning capacity to separate factual instruction following from complex, culture-specific stylistic constraints in non-English languages. 
-* **Citation:** As formalized by *Kumar et al. (2026)* in *"Diagnosing and Repairing Persona Collapse in LLM Advice"* and supported by *"The Chameleon's Limit,"* small language models suffer from **"Persona Collapse."** When forced to maintain a complex persona via prompt engineering, they rapidly abandon the behavioral constraints and default to a homogeneous, generic tone, or actively hallucinate.
+* **Analysis (Reject):** **Fatal Capability Limit.** Our current base model lacks the internal reasoning capacity to separate factual instruction following from complex, culture-specific stylistic constraints in non-English languages. 
+* **Citation:** As formalized by *Kumar et al. (2026)* in *"Diagnosing and Repairing Persona Collapse in LLM Advice"* and supported by *"The Chameleon's Limit,"* language models often suffer from **"Persona Collapse."** When forced to maintain a complex persona via prompt engineering, they rapidly abandon the behavioral constraints and default to a homogeneous, generic tone, or actively hallucinate.
 
 ### Path B: Small Inference-Time Rewriter (≤1B)
 * **Cost:** Severe UX Latency (serial TTFT generation).
-* **Analysis (Reject):** **Linguistic Fragmentation.** If our 4B model struggles with morphologically rich Indic languages, a ≤1B model will be profoundly worse. 
+* **Analysis (Reject):** **Linguistic Fragmentation.** If our primary model struggles with morphologically rich Indic languages, a ≤1B auxiliary model will be profoundly worse. 
 * **Citation:** Research surrounding Indic LLMs (e.g., the *BharatGen / PARAM-1* framework) heavily documents **"Linguistic Fragmentation."** Models with extremely small parameter counts completely fail to handle the morphological richness and dialect variations of Indic languages, causing them to spew gibberish or revert to English. Training a ≤1B model to avoid this would require massive, highly curated datasets far exceeding our 1,800-pair QA budget. 
 
 ### Path A: SFT on Synthetic Data (The Winner)
