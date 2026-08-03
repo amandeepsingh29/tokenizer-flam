@@ -45,25 +45,28 @@ Limit the maximum concurrent sequences at the serving engine level (e.g., `--max
 
 ---
 
-## B3: Reporting Error & Honest Goodput
+## B3: The "Longer Prompt" Illusion & True Goodput
 
 **The Misreading:**
-`REPORT_v0.md` erroneously concludes that longer prompts yield better GPU utilization and throughput. The intern fell into a classic benchmarking trap: the `reported_tok_s` column includes **prompt tokens (prefill)**. Prefill tokens are computed massively in parallel, whereas generated tokens (decode) are bottlenecked sequentially by memory bandwidth. Extending the prompt length simply packs more parallel prefill into the calculation, artificially inflating the aggregate tokens/second metric. It does *not* mean the system is generating output words any faster. 
+Section 2 of the report concludes that longer prompts yield better throughput and that batch 48 will reach ~3200 tok/s. This stems from a very common, yet critical, misreading of the `reported_tok_s` column. 
 
-**Deriving the "Honest Goodput" (Batch-24 Long-Prompt):**
-Honest goodput measures generation throughput (what the user actually experiences). We can derive this mathematically from the log in two independent ways:
+That specific column blends two completely different computational phases: **prefill** (reading the prompt) and **decode** (generating the response). Because reading the prompt happens massively in parallel while generating the response is a slow sequential process, dumping a massive 3,584-token prompt into the engine makes the blended `reported_tok_s` number artificially skyrocket. The GPU isn't actually writing words any faster; the metric is simply padded with prefill tokens. 
 
-1. **Macro Definition (Output / Time):**
-   `Goodput = (num_requests × gen_len) / wall_clock_s`
-   `Goodput = (24 × 512) / 61.16` = **200.9 tok/s**
+**Deriving the Honest Goodput (Batch-24 Long-Prompt):**
+To measure what the end-user actually experiences, we need to extract the pure generation throughput ("goodput"). We can mathematically prove the true generation speed using two independent methods from the `bench_log.csv` data:
 
-2. **De-blending the Metric:**
-   The `reported_tok_s` metric is simply `(prompt_len + gen_len) / time`. Therefore, the pure generation throughput is the proportion of generated tokens to total tokens.
-   `Goodput = reported_tok_s × (gen_len / (prompt_len + gen_len))`
+1. **Method 1: Macro Definition (Total Output Tokens / Wall Clock Time)**
+   We generated 512 tokens for 24 requests in 61.16 seconds.
+   `Goodput = (24 requests × 512 tokens) / 61.16 seconds` = **200.9 tok/s**
+
+2. **Method 2: De-blending the Reported Metric**
+   The `reported_tok_s` metric (1607.4) represents `(Total Tokens) / Time`. We can isolate the generation speed by multiplying it by the ratio of generated tokens to total tokens (512 / 4096).
    `Goodput = 1607.4 × (512 / 4096)` = **200.9 tok/s**
 
+Both proofs lock in at the exact same number: the actual generation speed is ~201 tok/s, an 87% drop from the reported 1607 tok/s. 
+
 **What the report should have said:**
-*"Longer prompts artificially inflate the `reported_tok_s` metric due to massive parallel prefill computation; the actual output generation speed for batch 24 is only ~201 tok/s, not 1607. Furthermore, linearly extrapolating this metric to assume batch 48 will hit 3200 tok/s is fatally flawed, because the L4 GPU only has enough KV cache to hold 25 concurrent long-context requests. Pushing past batch 25 causes cache thrashing and actually degrades throughput."*
+*"While extending prompt length artificially inflates our blended tokens/sec metric due to parallel prefill, our true generation goodput peaks at ~201 tok/s. Furthermore, we cannot assume linear scaling to batch 48. As proven by our capacity math, our L4 GPUs hit a hard KV-cache ceiling at 25 concurrent long-context sequences, meaning any batch larger than 25 will trigger cache eviction and actively degrade throughput."*
 
 ---
 
