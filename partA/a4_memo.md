@@ -38,4 +38,19 @@ The absolute best compression for Indic languages, dropping the penalty to near 
 | **IN22-Gen** | 37.12 | 45.07 (1.21x) | 51.80 (1.40x) | 55.06 (1.48x) |
 | **IN22-Conv** | 13.33 | 15.59 (1.17x) | 16.32 (1.22x) | 19.55 (1.47x) |
 
-*Note: The mathematically correct denominator is "Tokens per Sentence", because a parallel sentence holds the semantic payload of information constant across languages.*
+## Denominator Comparison: Why "Tokens per Sentence"?
+
+If we use the intern's original metric (**Tokens per Word**), Hindi appears **5.89x** more expensive than English. However, "Tokens per Word" is a fundamentally flawed metric because languages express the exact same semantic meaning using a different number of words (e.g., Hindi uses postpositions instead of prepositions, altering word counts). 
+
+By changing the denominator to **Tokens per parallel sentence**, we hold the actual semantic payload of information constant. Under this mathematically rigorous denominator (on the GPT-2 baseline), the true multiplier for our dataset is actually **7.41x** for formal text. The choice of denominator drastically changes the apparent cost multiplier.
+
+## Strategic Recommendations
+
+**1. Routing Recommendation:**
+Do not route all Indic traffic to a separate model yet. Instead, **upgrade our core tokenizer from GPT-2 to XLM-Roberta or GPT-4o (`o200k_base`)**. XLM-Roberta compresses Indic text so efficiently that the cost penalty drops to near parity (~1.2x - 1.4x), eliminating the need for a bifurcated, complex routing architecture and duplicated serving costs.
+
+**2. The Biggest Caveat:**
+Our Multilingual Eval Corpus consists of clean, grammatically correct sentences (Encyclopedic, News, structured Dialogue). **It cannot tell us how these tokenizers perform on highly informal, noisy user data.** If our real-world Indic users heavily code-mix (e.g., Hinglish/Tanglish), use internet slang, or typos, the real-world token efficiency could be vastly worse than our 1.3x baseline implies.
+
+**3. Production Metric to Monitor:**
+To catch this analysis being wrong in production, we must monitor the **`average_generated_tokens_per_request` segmented by `detected_language`**. If the ratio of Hindi generated tokens to English generated tokens spikes well beyond our predicted ~1.3x - 1.5x multiplier in production, it means real-world code-mixing or slang is defeating the tokenizer, and our capacity planning is compromised.

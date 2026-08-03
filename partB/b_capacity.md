@@ -41,7 +41,7 @@ This is caused by catastrophic **KV cache thrashing**. Our B1 math proved the GP
 
 **Proposed Deployment Change:**
 Limit the maximum concurrent sequences at the serving engine level (e.g., `--max-num-seqs 24` in vLLM).
-* **Predicted Quantitative Effect:** By artificially capping concurrency below the physical 25-sequence limit, excess requests (like the extra 8 in batch 32) will queue safely instead of causing cache thrashing. The throughput will stabilize  the peak ~1600 tand plateau nearok/s instead of crashing into the 1200s.
+* **Predicted Quantitative Effect:** By artificially capping concurrency below the physical 25-sequence limit, excess requests (like the extra 8 in batch 32) will queue safely instead of causing cache thrashing. The throughput will stabilize and plateau near the peak of ~1600 tok/s instead of crashing into the 1200s.
 
 ---
 

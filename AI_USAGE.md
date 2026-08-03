@@ -4,7 +4,7 @@ I used Antigravity and Codex during this assignment. Will breakdown and record t
 
 ### Where it helped
 #### Step 1:
-- **Setting up environment & testing:** The AI set up the base environment, ran procedural testing, and recorded the results in `Observation.md`.
+- **Setting up environment & testing:** The AI set up the base environment, ran procedural testing, and recorded the results in `partA/a2_audit_observations.md`.
 - **Spotting the math bugs:** The AI reviewed the intern's script, instantly caught the macro-averaging and lowercase bugs, and correctly explained why "tokens per sentence" is linguistically better than "tokens per word."
 
 #### Step 2:
