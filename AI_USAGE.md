@@ -18,4 +18,5 @@ During this assignment, the core **thinking process and logical direction** were
 ### Where it misled me or required overrides
 
 - **The OPUS Dataset Hallucination:** The AI initially recommended the OPUS-100 dataset as a conversational corpus. I had to scrap this recommendation because OPUS-100 is largely bilingual and heavily polluted with religious/software text rather than casual dialogue.
-- **Context Loss:** When generating the initial capacity math, the AI had a minor hallucination regarding the `max-num-seqs` configuration and required manual correction to align exactly with the physical 25-sequence limit.
+- **Lack of Evidence Grounding:** The AI frequently attempted to state conclusions without providing the underlying mathematical or empirical proofs. I had to explicitly force it to ground its results in hard evidence and step-by-step derivations (especially in the Part B capacity math).
+- **Context Bleed Between Tasks:** The AI struggled to treat the assignment as three distinct, independent modules. It often mixed contexts from Part A, Part B, and Part C together, requiring me to manually intervene and enforce strict boundaries between the sub-problems.
