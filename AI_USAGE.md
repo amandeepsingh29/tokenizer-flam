@@ -1,7 +1,8 @@
 # AI Usage Summary
 
-During this assignment, the core **thinking process and logical direction** were strictly mine. I utilized Antigravity and Codex specifically for script execution, coding, and mathematical validation. 
-
+### Segregation of Work
+- **My Role (Thinking, Verifying, & Validating):** I drove the core logical direction, developed the overarching hypotheses, cross-verified the AI's outputs, and explicitly validated the final mathematical and empirical results.
+- **AI's Role (Coding & Formatting):** I utilized Antigravity and Codex strictly as execution engines to write the scripts, perform the raw coding, and format my findings into the required professional structures.
 ### Where it helped
 
 #### Part A (Tokenizer Audit & Analysis):
